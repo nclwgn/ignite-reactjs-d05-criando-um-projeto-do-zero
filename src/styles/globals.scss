@@ -4,4 +4,17 @@
   padding: 0;
 }
 
-// TODO
+:root {
+  --pink-500: #ff57b2; // Highlight
+
+  --gray-100: #f8f8f8; // Heading
+  --gray-200: #d7d7d7; // Body
+  --gray-250: #bbbbbb; // Info
+  --gray-900: #1a1d23; // Background
+}
+
+body {
+  background-color: var(--gray-900);
+  color: var(--gray-200);
+  font-family: 'Inter', sans-serif;
+}
