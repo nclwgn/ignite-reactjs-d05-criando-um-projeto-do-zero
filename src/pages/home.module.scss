@@ -2,11 +2,67 @@
   width: 100%;
   max-width: 700px;
   padding: 0 2rem;
+  padding-top: 2rem;
 
   margin: 0 auto;
 
-  a + a {
-    margin-top: 2rem;
+  article + article {
+    margin-top: 3rem;
+  }
+
+  article {
+    header {
+      font-weight: bold;
+      font-size: 1.75rem;
+      color: var(--heading);
+
+      transition: color 0.2s;
+    }
+
+    > * + * {
+      margin-top: 0.5rem
+    }
+
+    footer {
+      margin-top: 1.5rem;
+      color: var(--info);
+      display: flex;
+
+      > * {
+        display: flex;
+        align-items: center;
+
+        svg {
+          margin-right: 0.5rem;
+        }
+      }
+
+      > * + * {
+        margin-left: 1.5rem;
+      }
+    }
+
+    &:hover {
+      cursor: pointer;
+
+      header {
+        color: var(--highlight);
+      }
+    }
+  }
+
+  .loadMore {
+    margin-top: 4rem;
+    color: var(--highlight);
+    font-weight: 600;
+    font-size: 1.125rem;
+
+    transition: opacity 0.2s;
+
+    &:hover {
+      cursor: pointer;
+      opacity: 0.8;
+    }
   }
 }
 
