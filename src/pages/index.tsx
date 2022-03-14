@@ -1,5 +1,6 @@
 import { GetStaticProps } from 'next';
 import Head from 'next/head';
+import Link from 'next/link';
 import { FiCalendar, FiUser } from 'react-icons/fi';
 
 import commonStyles from '../styles/common.module.scss';
@@ -30,34 +31,40 @@ export default function Home() {
       <Head>
         <title>spacetraveling</title>
       </Head>
-      <div className={styles.container}>
-        <article>
-          <header>Como utilizar Hooks</header>
-          <p>Pensando em sincronização em vez de ciclos de vida.</p>
+      <div className={`${styles.container} ${commonStyles.contentContainer}`}>
+        <Link href='/post/post-sem-slug'>
+          <article>
+            <header>Como utilizar Hooks</header>
+            <p>Pensando em sincronização em vez de ciclos de vida.</p>
 
-          <footer>
-            <time><FiCalendar size={20}/>15 Mar 2021</time>
-            <span><FiUser size={20}/>Joseph Oliveira</span>
-          </footer>
-        </article>
-        <article>
-          <header>Como utilizar Hooks</header>
-          <p>Pensando em sincronização em vez de ciclos de vida.</p>
+            <footer>
+              <time><FiCalendar size={20}/>15 Mar 2021</time>
+              <span><FiUser size={20}/>Joseph Oliveira</span>
+            </footer>
+          </article>
+        </Link>
+        <Link href='/post/post-sem-slug'>
+          <article>
+            <header>Como utilizar Hooks</header>
+            <p>Pensando em sincronização em vez de ciclos de vida.</p>
 
-          <footer>
-            <time><FiCalendar size={20}/>15 Mar 2021</time>
-            <span><FiUser size={20}/>Joseph Oliveira</span>
-          </footer>
-        </article>
-        <article>
-          <header>Como utilizar Hooks</header>
-          <p>Pensando em sincronização em vez de ciclos de vida.</p>
+            <footer>
+              <time><FiCalendar size={20}/>15 Mar 2021</time>
+              <span><FiUser size={20}/>Joseph Oliveira</span>
+            </footer>
+          </article>
+        </Link>
+        <Link href='/post/post-sem-slug'>
+          <article>
+            <header>Como utilizar Hooks</header>
+            <p>Pensando em sincronização em vez de ciclos de vida.</p>
 
-          <footer>
-            <time><FiCalendar size={20}/>15 Mar 2021</time>
-            <span><FiUser size={20}/>Joseph Oliveira</span>
-          </footer>
-        </article>
+            <footer>
+              <time><FiCalendar size={20}/>15 Mar 2021</time>
+              <span><FiUser size={20}/>Joseph Oliveira</span>
+            </footer>
+          </article>
+        </Link>
 
         <p className={styles.loadMore}>Carregar mais posts</p>
       </div>
