@@ -1,10 +1,14 @@
-import { GetStaticProps } from 'next';
+import next, { GetStaticProps } from 'next';
+import * as prismic from '@prismicio/client';
 import Head from 'next/head';
 import Link from 'next/link';
 import { FiCalendar, FiUser } from 'react-icons/fi';
+import { client } from '../services/prismic';
 
 import commonStyles from '../styles/common.module.scss';
 import styles from './home.module.scss';
+import { RichText } from 'prismic-dom';
+import { useState } from 'react';
 
 interface Post {
   uid?: string;
@@ -25,56 +29,110 @@ interface HomeProps {
   postsPagination: PostPagination;
 }
 
-export default function Home() {
+export default function Home({ postsPagination: { next_page, results } }: HomeProps) {
+  const [postData, setPostData] = useState<Post[]>(results);
+  const [nextPageFetchLink, setNextPageFetchLink] = useState<string>(next_page);
+
+  async function handleFetchMoreClick() {
+    try {
+      if (!nextPageFetchLink) {
+        console.log('There are no more posts to be loaded');
+        return;
+      }
+
+      fetch(nextPageFetchLink)
+        .then(async response => {
+          const prismicResponse: PostPagination = await response.json();
+
+          setNextPageFetchLink(prismicResponse.next_page);
+
+          const newPostData: Post[] = prismicResponse.results.map(post => ({
+            uid: post.uid,
+            first_publication_date: new Date(post.first_publication_date).toLocaleDateString('pt-BR', {
+              day: '2-digit',
+              month: 'long',
+              year: 'numeric'
+            }),
+            data: {
+              title: RichText.asText(post.data.title),
+              subtitle: RichText.asText(post.data.subtitle),
+              author: RichText.asText(post.data.author)
+            }
+          }));
+
+          setPostData(postData.concat(newPostData));
+        })
+        .catch(error => {
+          console.log('Some problem happened when fetching posts from Prismic API', error);
+        });
+    }
+    catch (err) {
+      console.log(err);
+    }
+  }
+
   return (
     <>
       <Head>
         <title>spacetraveling</title>
       </Head>
       <div className={`${styles.container} ${commonStyles.contentContainer}`}>
-        <Link href='/post/post-sem-slug'>
-          <article>
-            <header>Como utilizar Hooks</header>
-            <p>Pensando em sincronização em vez de ciclos de vida.</p>
+        {postData.map(post => (
+          <Link href={`/post/${post.uid}`}>
+            <article key={post.uid}>
+              <header>{post.data.title}</header>
+              <p>{post.data.subtitle}</p>
 
-            <footer>
-              <time><FiCalendar size={20}/>15 Mar 2021</time>
-              <span><FiUser size={20}/>Joseph Oliveira</span>
-            </footer>
-          </article>
-        </Link>
-        <Link href='/post/post-sem-slug'>
-          <article>
-            <header>Como utilizar Hooks</header>
-            <p>Pensando em sincronização em vez de ciclos de vida.</p>
+              <footer>
+                <time><FiCalendar size={20}/>{post.first_publication_date}</time>
+                <span><FiUser size={20}/>{post.data.author}</span>
+              </footer>
+            </article>
+          </Link>
+        ))}
 
-            <footer>
-              <time><FiCalendar size={20}/>15 Mar 2021</time>
-              <span><FiUser size={20}/>Joseph Oliveira</span>
-            </footer>
-          </article>
-        </Link>
-        <Link href='/post/post-sem-slug'>
-          <article>
-            <header>Como utilizar Hooks</header>
-            <p>Pensando em sincronização em vez de ciclos de vida.</p>
-
-            <footer>
-              <time><FiCalendar size={20}/>15 Mar 2021</time>
-              <span><FiUser size={20}/>Joseph Oliveira</span>
-            </footer>
-          </article>
-        </Link>
-
-        <p className={styles.loadMore}>Carregar mais posts</p>
+        {!!nextPageFetchLink
+          && (
+            <p
+              className={styles.loadMore}
+              onClick={handleFetchMoreClick}
+            >
+              Carregar mais posts
+            </p>
+          )
+        }
       </div>
     </>
   )
 }
 
-// export const getStaticProps = async () => {
-//   // const prismic = getPrismicClient();
-//   // const postsResponse = await prismic.query(TODO);
+export const getStaticProps: GetStaticProps<HomeProps> = async () => {
+  const prismicClient = client;
 
-//   // TODO
-// };
+  const response = await prismicClient.get({
+    predicates: prismic.predicate.at('document.type', 'posts'),
+    fetch: ['post.title', 'author.name'],
+    pageSize: 1
+  });
+
+  const posts: Post[] = response.results.map(post => ({
+    uid: post.uid,
+    first_publication_date: new Date(post.first_publication_date).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    }),
+    data: {
+      title: RichText.asText(post.data.title),
+      subtitle: RichText.asText(post.data.subtitle),
+      author: RichText.asText(post.data.author)
+    }
+  }));
+
+  return {
+    props: {
+      postsPagination: {
+      next_page: response.next_page,
+      results: posts
+  }}};
+};
