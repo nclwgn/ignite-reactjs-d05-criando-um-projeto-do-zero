@@ -106,28 +106,35 @@ export default function Home({ postsPagination: { next_page, results } }: HomePr
   )
 }
 
+const months = [
+  'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'
+];
+
 export const getStaticProps: GetStaticProps<HomeProps> = async () => {
   const prismicClient = client;
 
   const response = await prismicClient.get({
     predicates: prismic.predicate.at('document.type', 'posts'),
     fetch: ['post.title', 'author.name'],
-    pageSize: 1
+    pageSize: 5
   });
 
-  const posts: Post[] = response.results.map(post => ({
-    uid: post.uid,
-    first_publication_date: new Date(post.first_publication_date).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    }),
-    data: {
-      title: RichText.asText(post.data.title),
-      subtitle: RichText.asText(post.data.subtitle),
-      author: RichText.asText(post.data.author)
+
+  const posts: Post[] = response.results.map(post => {
+    const firstPublicationDate = new Date(post.first_publication_date);
+
+    const formattedDate = `${firstPublicationDate.getDay()} ${months[firstPublicationDate.getMonth()]} ${firstPublicationDate.getFullYear()}`;
+
+    return {
+      uid: post.uid,
+      first_publication_date: formattedDate,
+      data: {
+        title: RichText.asText(post.data.title),
+        subtitle: RichText.asText(post.data.subtitle),
+        author: RichText.asText(post.data.author)
+      }
     }
-  }));
+  });
 
   return {
     props: {
