@@ -1,14 +1,16 @@
-import next, { GetStaticProps } from 'next';
-import * as prismic from '@prismicio/client';
+import { GetStaticProps } from 'next';
+import Prismic from '@prismicio/client';
 import Head from 'next/head';
 import Link from 'next/link';
 import { FiCalendar, FiUser } from 'react-icons/fi';
-import { client } from '../services/prismic';
+import { getPrismicClient } from '../services/prismic';
 
 import commonStyles from '../styles/common.module.scss';
 import styles from './home.module.scss';
 import { RichText } from 'prismic-dom';
 import { useState } from 'react';
+import { formatDateLikeRocketseat } from '../utils/date';
+import ApiSearchResponse from '@prismicio/client/types/ApiSearchResponse';
 
 interface Post {
   uid?: string;
@@ -34,41 +36,27 @@ export default function Home({ postsPagination: { next_page, results } }: HomePr
   const [nextPageFetchLink, setNextPageFetchLink] = useState<string>(next_page);
 
   async function handleFetchMoreClick() {
-    try {
-      if (!nextPageFetchLink) {
-        console.log('There are no more posts to be loaded');
-        return;
+    if (!nextPageFetchLink) {
+      console.log('There are no more posts to be loaded');
+      return;
+    }
+
+    const response = await fetch(nextPageFetchLink)
+      .then(response => response.json()
+      .then((data: ApiSearchResponse) => data));
+
+    const newPosts: Post[] = response.results.map(post => ({
+      uid: post.uid,
+      first_publication_date: formatDateLikeRocketseat(post.first_publication_date),
+      data: {
+        title: RichText.asText(post.data.title),
+        subtitle: RichText.asText(post.data.subtitle),
+        author: RichText.asText(post.data.author)
       }
+    }));
 
-      fetch(nextPageFetchLink)
-        .then(async response => {
-          const prismicResponse: PostPagination = await response.json();
-
-          setNextPageFetchLink(prismicResponse.next_page);
-
-          const newPostData: Post[] = prismicResponse.results.map(post => ({
-            uid: post.uid,
-            first_publication_date: new Date(post.first_publication_date).toLocaleDateString('pt-BR', {
-              day: '2-digit',
-              month: 'long',
-              year: 'numeric'
-            }),
-            data: {
-              title: RichText.asText(post.data.title),
-              subtitle: RichText.asText(post.data.subtitle),
-              author: RichText.asText(post.data.author)
-            }
-          }));
-
-          setPostData(postData.concat(newPostData));
-        })
-        .catch(error => {
-          console.log('Some problem happened when fetching posts from Prismic API', error);
-        });
-    }
-    catch (err) {
-      console.log(err);
-    }
+    setPostData(postData.concat(newPosts));
+    setNextPageFetchLink(response.next_page);
   }
 
   return (
@@ -78,20 +66,20 @@ export default function Home({ postsPagination: { next_page, results } }: HomePr
       </Head>
       <div className={`${styles.container} ${commonStyles.contentContainer}`}>
         {postData.map(post => (
-          <Link href={`/post/${post.uid}`}>
-            <article key={post.uid}>
+          <Link href={`/post/${post.uid}`} key={post.uid}>
+            <article>
               <header>{post.data.title}</header>
               <p>{post.data.subtitle}</p>
 
               <footer>
-                <time><FiCalendar size={20}/>{post.first_publication_date}</time>
+                <time><FiCalendar size={20}/>{formatDateLikeRocketseat(post.first_publication_date)}</time>
                 <span><FiUser size={20}/>{post.data.author}</span>
               </footer>
             </article>
           </Link>
         ))}
 
-        {!!nextPageFetchLink
+        {nextPageFetchLink !== undefined && nextPageFetchLink !== null
           && (
             <p
               className={styles.loadMore}
@@ -106,40 +94,37 @@ export default function Home({ postsPagination: { next_page, results } }: HomePr
   )
 }
 
-const months = [
-  'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'
-];
-
 export const getStaticProps: GetStaticProps<HomeProps> = async () => {
-  const prismicClient = client;
+  const prismicClient = getPrismicClient();
 
-  const response = await prismicClient.get({
-    predicates: prismic.predicate.at('document.type', 'posts'),
-    fetch: ['post.title', 'author.name'],
-    pageSize: 5
-  });
+  const response = await prismicClient.query(
+    Prismic.Predicates.at('document.type', 'posts'),
+    {
+      pageSize: 5,
+      fetch: ['post.title', 'post.subtitle', 'post.author']
+    }
+  );
 
+  console.log(response);
 
-  const posts: Post[] = response.results.map(post => {
-    const firstPublicationDate = new Date(post.first_publication_date);
-
-    const formattedDate = `${firstPublicationDate.getDay()} ${months[firstPublicationDate.getMonth()]} ${firstPublicationDate.getFullYear()}`;
-
-    return {
+  const posts: Post[] = response.results.map(post => (
+    {
       uid: post.uid,
-      first_publication_date: formattedDate,
+      first_publication_date: post.first_publication_date,
       data: {
-        title: RichText.asText(post.data.title),
-        subtitle: RichText.asText(post.data.subtitle),
-        author: RichText.asText(post.data.author)
+        title: post.data.title,
+        subtitle: post.data.subtitle,
+        author: post.data.author
       }
     }
-  });
+  ));
 
   return {
     props: {
       postsPagination: {
-      next_page: response.next_page,
-      results: posts
-  }}};
+        next_page: response.next_page,
+        results: posts
+      }
+    }
+  };
 };
