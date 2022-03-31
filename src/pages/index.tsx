@@ -32,7 +32,7 @@ interface HomeProps {
 }
 
 export default function Home({ postsPagination: { next_page, results } }: HomeProps) {
-  const [postData, setPostData] = useState<Post[]>(results);
+  const [postData, setPostData] = useState(results);
   const [nextPageFetchLink, setNextPageFetchLink] = useState<string>(next_page);
 
   async function handleFetchMoreClick() {
@@ -49,11 +49,12 @@ export default function Home({ postsPagination: { next_page, results } }: HomePr
       uid: post.uid,
       first_publication_date: formatDateLikeRocketseat(post.first_publication_date),
       data: {
-        title: RichText.asText(post.data.title),
-        subtitle: RichText.asText(post.data.subtitle),
-        author: RichText.asText(post.data.author)
+        title: post.data.title,
+        subtitle: post.data.subtitle,
+        author: post.data.author
       }
     }));
+
 
     setPostData(postData.concat(newPosts));
     setNextPageFetchLink(response.next_page);
@@ -100,12 +101,10 @@ export const getStaticProps: GetStaticProps<HomeProps> = async () => {
   const response = await prismicClient.query(
     Prismic.Predicates.at('document.type', 'posts'),
     {
-      pageSize: 5,
+      pageSize: 1,
       fetch: ['post.title', 'post.subtitle', 'post.author']
     }
   );
-
-  console.log(response);
 
   const posts: Post[] = response.results.map(post => (
     {
